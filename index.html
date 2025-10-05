@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Learning</title>
+    <script src="https://unpkg.com/jspsych@8.2.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-audio-keyboard-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-audio-button-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-fullscreen@2.0.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload@2.1.0"></script>
+    <link href="https://unpkg.com/jspsych@8.2.2/css/jspsych.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        .no-cursor {
+            cursor:none;
+        }
+    h1 {
+        font-size: 36px;
+    }
+    p {
+        font-size: 26px;
+    }
+    </style>
+</head>
+<body></body>
+
+<script>
+    var jsPsych = initJsPsych({
+        on_finish: function() {
+            jsPsych.data.addProperties({
+                participant: id,
+                version: version,
+                wp_acc: wp_acc,
+                wp_conf: wp_conf,
+                wn_acc: wn_acc,
+                wn_conf: wn_conf,
+                pn_acc: pn_acc,
+                pn_conf: pn_conf
+            });
+            var data = jsPsych.data.get().filter({task: 'response'});
+            data.localSave('csv', `WL_${id}.csv`);
+            alert('Thank you for your participation! Your data has been saved.');
+        }
+    });
+    var timeline = [];
+
+    var id;
+    do {
+        id = prompt("Please enter your participant ID：", "");
+    } while (!/^\d+$/.test(id));
+    var version = String(2 - id % 2);
+ 
+    var audio_list = [
+        `audio/test.wav`,
+        `audio/stream_a.wav`,
+        `audio/stream_b.wav`,
+        `audio/a1.wav`,
+        `audio/a2.wav`,
+        `audio/a3.wav`,
+        `audio/a4.wav`,
+        `audio/a5.wav`,
+        `audio/a6.wav`,
+        `audio/b1.wav`,
+        `audio/b2.wav`,
+        `audio/b3.wav`,
+        `audio/b4.wav`,
+        `audio/b5.wav`,
+        `audio/b6.wav`,
+        `audio/n1.wav`,
+        `audio/n2.wav`,
+        `audio/n3.wav`,
+        `audio/n4.wav`,
+        `audio/n5.wav`,
+        `audio/n6.wav`
+    ];
+    var preload = {
+        type: jsPsychPreload,
+        audio: audio_list,
+    };
+    timeline.push(preload);
+
+    var audio_test_instruction = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+            <h1>Audio Test</h1>
+            <br>
+            <p>This expriment requires audio playback, so we need to make sure your audio device is working properly.</p>
+            <p>Please press the button to play the test audio and adjust your device to a suitable volume.</p>
+        `,
+        choices: ['<div style="font-size:26px;">Play Test Audio</div>'],
+    };
+    timeline.push(audio_test_instruction);
+
+    var audio_test = {
+        type: jsPsychAudioButtonResponse,
+        stimulus: 'audio/test.wav',
+        choices: ['<div style="font-size:26px;">Test Complete</div>'],
+        prompt: `<p>Test audio is playing. Please adjust to a comfortable volume level, then click the “Test Complete” button above.</p>`,
+    };
+    timeline.push(audio_test);
+
+    var fullscreen = {
+        type: jsPsychFullscreen,
+        fullscreen_mode: true,
+    };
+    timeline.push(fullscreen);
+
+    var instructions = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+            <h1>Welcome to this experiment!</h1>
+            <p>In this experiment, you will hear a <b>new language</b>. Please try your best to learn the <b>words</b> in this language.</p>
+            <p>The experiment consists of two parts:</p>
+            <p>The first part is <b>Word Learning</b>, where you listen to a recording of the language and try to remember the words in it.</p>
+            <p>The second part is a <b>Word Test</b>, where you judge whether the words you hear are words in this language.</p>
+            <p>The word learning part lasts for 3 minutes, and the word test consists of 36 questions.</p>
+        `,
+        choices: ['<div style="font-size:26px;">Start Learning</div>'],
+    };
+    timeline.push(instructions);
+    
+    var play_stream = {
+        type: jsPsychAudioKeyboardResponse,
+         stimulus: function () {
+            if (version === '1') {
+                return `audio/stream_a.wav`;
+            } else {
+                return `audio/stream_b.wav`;
+            }
+        },
+        on_start: function() {
+            document.body.classList.add('no-cursor');
+        },
+        choices: "NO_KEYS",
+        trial_ends_after_audio: true,
+        prompt: "<p>The recording is playing. Please listen carefully and try to remember the words in it...</p>",
+    };
+    timeline.push(play_stream);
+
+    var test_instructions = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+            <h1> You have completed the word learning part!</h1>
+            <p>Next, you will take the <b>word test</b>.</p>
+            <p>In this part, you will hear <b>two words</b> one after another each time.</p>
+            <p>You need to judge which one is more like a word from the language you just learned.</p>
+            <p>If it is the first one, please choose 1; if it is the second one, please choose 2.</p>
+            <p>After that, you will also need to give a <b>confidence rating</b> for your choice.</p>
+            <p>There are a total of 36 questions in the test, please answer carefully.</p>
+        `,
+        choices: ['<div style="font-size:26px;">Start Test</div>'],
+        on_start: function() {
+            document.body.classList.remove('no-cursor');
+        },
+    };
+    timeline.push(test_instructions);
+
+    if (version===1) {
+        var test_stimuli = [
+            {condition: 'word_phantom', word0: `audio/a1.wav`, word1: `audio/b1.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/a2.wav`, word1: `audio/b2.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/a3.wav`, word1: `audio/b3.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/a4.wav`, word1: `audio/b4.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/a5.wav`, word1: `audio/b5.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/a6.wav`, word1: `audio/b6.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/b1.wav`, word1: `audio/a1.wav`, answer: '1'},
+            {condition: 'word_phantom', word0: `audio/b2.wav`, word1: `audio/a2.wav`, answer: '1'},
+            {condition: 'word_phantom', word0: `audio/b3.wav`, word1: `audio/a3.wav`, answer: '1'},
+            {condition: 'word_phantom', word0: `audio/b4.wav`, word1: `audio/a4.wav`, answer: '1'},
+            {condition: 'word_phantom', word0: `audio/b5.wav`, word1: `audio/a5.wav`, answer: '1'},
+            {condition: 'word_phantom', word0: `audio/b6.wav`, word1: `audio/a6.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/a1.wav`, word1: `audio/n1.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/a2.wav`, word1: `audio/n2.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/a3.wav`, word1: `audio/n3.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/a4.wav`, word1: `audio/n4.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/a5.wav`, word1: `audio/n5.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/a6.wav`, word1: `audio/n6.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/n1.wav`, word1: `audio/a1.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/n2.wav`, word1: `audio/a2.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/n3.wav`, word1: `audio/a3.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/n4.wav`, word1: `audio/a4.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/n5.wav`, word1: `audio/a5.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/n6.wav`, word1: `audio/a6.wav`, answer: '1'}, 
+            {condition: 'phantom_nonword', word0: `audio/b1.wav`, word1: `audio/n1.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/b2.wav`, word1: `audio/n2.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/b3.wav`, word1: `audio/n3.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/b4.wav`, word1: `audio/n4.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/b5.wav`, word1: `audio/n5.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/b6.wav`, word1: `audio/n6.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/n1.wav`, word1: `audio/b1.wav`, answer: '1'},
+            {condition: 'phantom_nonword', word0: `audio/n2.wav`, word1: `audio/b2.wav`, answer: '1'},
+            {condition: 'phantom_nonword', word0: `audio/n3.wav`, word1: `audio/b3.wav`, answer: '1'},
+            {condition: 'phantom_nonword', word0: `audio/n4.wav`, word1: `audio/b4.wav`, answer: '1'},
+            {condition: 'phantom_nonword', word0: `audio/n5.wav`, word1: `audio/b5.wav`, answer: '1'},
+            {condition: 'phantom_nonword', word0: `audio/n6.wav`, word1: `audio/b6.wav`, answer: '1'},
+        ];
+    } else {
+        var test_stimuli = [
+            {condition: 'word_phantom', word0: `audio/b1.wav`, word1: `audio/a1.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/b2.wav`, word1: `audio/a2.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/b3.wav`, word1: `audio/a3.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/b4.wav`, word1: `audio/a4.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/b5.wav`, word1: `audio/a5.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/b6.wav`, word1: `audio/a6.wav`, answer: '0'},
+            {condition: 'word_phantom', word0: `audio/a1.wav`, word1: `audio/b1.wav`, answer: '1'},
+            {condition: 'word_phantom', word0: `audio/a2.wav`, word1: `audio/b2.wav`, answer: '1'},
+            {condition: 'word_phantom', word0: `audio/a3.wav`, word1: `audio/b3.wav`, answer: '1'},
+            {condition: 'word_phantom', word0: `audio/a4.wav`, word1: `audio/b4.wav`, answer: '1'},
+            {condition: 'word_phantom', word0: `audio/a5.wav`, word1: `audio/b5.wav`, answer: '1'},
+            {condition: 'word_phantom', word0: `audio/a6.wav`, word1: `audio/b6.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/b1.wav`, word1: `audio/n1.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/b2.wav`, word1: `audio/n2.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/b3.wav`, word1: `audio/n3.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/b4.wav`, word1: `audio/n4.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/b5.wav`, word1: `audio/n5.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/b6.wav`, word1: `audio/n6.wav`, answer: '0'},
+            {condition: 'word_nonword', word0: `audio/n1.wav`, word1: `audio/b1.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/n2.wav`, word1: `audio/b2.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/n3.wav`, word1: `audio/b3.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/n4.wav`, word1: `audio/b4.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/n5.wav`, word1: `audio/b5.wav`, answer: '1'},
+            {condition: 'word_nonword', word0: `audio/n6.wav`, word1: `audio/b6.wav`, answer: '1'}, 
+            {condition: 'phantom_nonword', word0: `audio/a1.wav`, word1: `audio/n1.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/a2.wav`, word1: `audio/n2.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/a3.wav`, word1: `audio/n3.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/a4.wav`, word1: `audio/n4.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/a5.wav`, word1: `audio/n5.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/a6.wav`, word1: `audio/n6.wav`, answer: '0'},
+            {condition: 'phantom_nonword', word0: `audio/n1.wav`, word1: `audio/a1.wav`, answer: '1'},
+            {condition: 'phantom_nonword', word0: `audio/n2.wav`, word1: `audio/a2.wav`, answer: '1'},
+            {condition: 'phantom_nonword', word0: `audio/n3.wav`, word1: `audio/a3.wav`, answer: '1'},
+            {condition: 'phantom_nonword', word0: `audio/n4.wav`, word1: `audio/a4.wav`, answer: '1'},
+            {condition: 'phantom_nonword', word0: `audio/n5.wav`, word1: `audio/a5.wav`, answer: '1'},
+            {condition: 'phantom_nonword', word0: `audio/n6.wav`, word1: `audio/a6.wav`, answer: '1'},
+        ];
+    }
+
+    var play_word0 = {
+        type: jsPsychAudioKeyboardResponse,
+        stimulus: jsPsych.timelineVariable('word0'),
+        choices: "NO_KEYS",
+        trial_ends_after_audio: true,
+        prompt: `<div style="font-size:36px;">1</div>`,
+        on_start: function() {
+            document.body.classList.add('no-cursor');
+        },
+    };
+    var play_word1 = {
+        type: jsPsychAudioKeyboardResponse,
+        stimulus: jsPsych.timelineVariable('word1'),
+        choices: "NO_KEYS",
+        trial_ends_after_audio: true,
+        prompt: `<div style="font-size:36px;">2</div>`,
+        on_start: function() {
+            document.body.classList.add('no-cursor');
+        },
+    };
+    var get_response = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: '',
+        choices: ['1', '2'],
+        button_html: (choice) => `<button class="jspsych-btn" style="width: 100px; height: 100px; margin: 50px; font-size:36px; text-align: center;">${choice}</button>`,
+        on_start: function() {
+            document.body.classList.remove('no-cursor');
+        },
+    };
+    var get_confidence = {
+        type: jsPsychHtmlSliderResponse,
+        stimulus: "<p>Please rate your confidence in your choice:</p>",
+        labels: ['<p>Completely Uncertain</p>', '<p>Very Certain</p>'],
+        min: 0,
+        max: 100,
+        slider_start: 50,
+        step: 1,
+        require_movement: true,
+        button_label: '<div style="font-size:26px;">Continue</div>',
+        on_finish: function(data) {
+            data.task = 'response';
+            data.condition = jsPsych.evaluateTimelineVariable('condition');
+            data.word0 = jsPsych.evaluateTimelineVariable('word0');
+            data.word1 = jsPsych.evaluateTimelineVariable('word1');
+            data.correct_answer = jsPsych.evaluateTimelineVariable('answer');
+            data.answer = jsPsych.data.get().last(2).values()[0].response;
+            data.correct = (data.answer == data.correct_answer);
+            data.confidence = data.response;
+            
+        },
+    }
+    var blank = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: '',
+        choices: "NO_KEYS",
+        trial_duration: 500,
+        on_start: function() {
+            document.body.classList.add('no-cursor');
+        },
+    };
+    var test_procedure = {
+        timeline: [play_word0, blank, play_word1, blank, get_response, get_confidence, blank],
+        timeline_variables: test_stimuli,
+        randomize_order: true,
+    };
+    timeline.push(test_procedure);
+
+    var wp_acc = 0;
+    var wp_conf = 0;
+    var wn_acc = 0;
+    var wn_conf = 0;
+    var pn_acc = 0;
+    var pn_conf = 0;
+
+    var debrief = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: function() {
+            var data = jsPsych.data.get().filter({task: 'response'});
+            var correct_data = data.filter({correct: true});
+            wp_acc = correct_data.filter({condition: 'word_phantom'}).count() / data.filter({condition: 'word_phantom'}).count();
+            wp_conf = correct_data.filter({condition: 'word_phantom'}).select('confidence').mean();
+            wn_acc = correct_data.filter({condition: 'word_nonword'}).count() / data.filter({condition: 'word_nonword'}).count();
+            wn_conf = correct_data.filter({condition: 'word_nonword'}).select('confidence').mean();
+            pn_acc = correct_data.filter({condition: 'phantom_nonword'}).count() / data.filter({condition: 'phantom_nonword'}).count();
+            pn_conf = correct_data.filter({condition: 'phantom_nonword'}).select('confidence').mean();
+            return `
+                <h1>The experiment is over!</h1>
+                <p>Thank you for your participation!</p>
+                <p>Your test results are as follows:</p>
+                <p>word-phantom: accuracy ${(wp_acc*100).toFixed(2)}%，average confidence ${wp_conf.toFixed(2)}</p>
+                <p>word-nonword：accuracy ${(wn_acc*100).toFixed(2)}%，average confidence ${wn_conf.toFixed(2)}</p>
+                <p>phantom-nonword：accuracy ${(pn_acc*100).toFixed(2)}%，average confidence ${pn_conf.toFixed(2)}</p>
+            `;
+        },
+        choices: ['<div style="font-size:26px;">Exit Fullscreen and Save Data</div>'],
+        on_start: function() {
+            document.body.classList.remove('no-cursor');
+        },
+    };
+    timeline.push(debrief);
+
+    var exit_fullscreen = {
+        type: jsPsychFullscreen,
+        fullscreen_mode: false,
+    };
+    timeline.push(exit_fullscreen);
+
+    jsPsych.run(timeline);
+</script>
